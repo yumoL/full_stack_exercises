@@ -1,1 +1,1 @@
-# full_stack_exercises
+### Exercises of a Full Stack course
