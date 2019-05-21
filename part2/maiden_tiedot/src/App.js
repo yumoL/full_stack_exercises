@@ -10,18 +10,47 @@ const Language = ({ name }) => {
   )
 }
 const Languages = ({ languages }) => {
-  //console.log(languages[0])
   return (
     languages.map(l =>
       <Language key={l.name} name={l.name} />)
   )
 }
 
-const Country = ({ name }) => {
+const Country = (props) => {
+  const [show, setShow] = useState(false)
+  const [weather, setWeather] = useState([])
+  const [capital, setCapital] = useState('Helsinki')
+  useEffect(() => {
+    const address = `http://api.apixu.com/v1/current.json?key=3dd8415ec22e4a36939105617191905&q=${capital}`
+    axios
+      .get(address)
+      .then(response => {
+        setWeather(response.data)
+        console.log(capital)
+      })
+  }, [capital])
+
+  const toggleShow = () => {
+    setShow(!show)
+    setCapital(props.capital)
+  }
+  const label = show
+    ? 'hide' : 'show'
+  if (!show) {
+    return (
+      <li>
+        {props.name}
+        <button onClick={() => toggleShow()}>{label}</button>
+      </li>
+    )
+  }
   return (
     <div>
-      <p>{name}</p>
+      <button onClick={() => toggleShow()}>{label}</button>
+      <Detail name={props.name} capital={props.capital} population={props.population} languages={props.languages} flag={props.flag} />
+      <Weather tempC={weather.current.temp_c} windKph={weather.current.wind_kph} windDir={weather.current.wind_dir} />
     </div>
+
   )
 }
 
@@ -38,7 +67,7 @@ const Weather = ({ tempC, windKph, windDir }) => {
   )
 }
 
-const CountryWithDetail = ({ name, capital, population, languages, flag }) => {
+const Detail = ({ name, capital, population, languages, flag }) => {
   return (
     <div>
       <div>
@@ -60,10 +89,7 @@ const CountryWithDetail = ({ name, capital, population, languages, flag }) => {
 const App = () => {
   const [countries, setCountries] = useState([])
   const [keyWord, setKeyWord] = useState([''])
-  const [show, setShow] = useState(false)
-  const [weather, setWeather] = useState([])
-  const [capital, setCapital] = useState('Helsinki')
-  const [showWeather, setShowWeather] = useState(false)
+  const [shoeNames, setShowNames] = useState(false)
 
   useEffect(() => {
     axios
@@ -73,18 +99,7 @@ const App = () => {
       })
   }, [])
 
-  useEffect(() => {
-    const address = `http://api.apixu.com/v1/current.json?key=3dd8415ec22e4a36939105617191905&q=${capital}`
-    axios
-      .get(address)
-      .then(response => {
-        setWeather(response.data)
-        console.log(capital)
-      })
-  }, [capital])
-
-
-  const countriesToShow = show
+  const countriesToShow = shoeNames
     ? countries.filter(c => c.name.toLowerCase().includes(keyWord.toLowerCase()))
     : countries
 
@@ -93,7 +108,7 @@ const App = () => {
     //setCountriesToShow(countries.filter(c => c.name.toLowerCase().includes(newWord.toLowerCase())))
     const l = countries.filter(c => c.name.toLowerCase().includes(newWord.toLowerCase())).length
     if (l < 10) {
-      setShow(true)
+      setShowNames(true)
     }
     setKeyWord(newWord)
   }
@@ -106,34 +121,12 @@ const App = () => {
       </div>
     )
   }
-  const buttonClick = (cNow) => {
-    setShowWeather(!showWeather)
-    console.log(showWeather)
-    setCapital(cNow)
-    console.log(capital)
-  }
 
-  const capitalTemp = showWeather
-    ? <Weather tempC={weather.current.temp_c} windKph={weather.current.wind_kph} windDir={weather.current.wind_dir} />
-    : null
-
-  if (countriesToShow.length === 1) {
-    const c = countriesToShow[0]
-    return (
-      <div>
-        Find countries: <input value={keyWord} onChange={handleKeyWordChange} />
-        <CountryWithDetail key={c.name} name={c.name} capital={c.capital} population={c.population} languages={c.languages} flag={c.flag} />
-        <button onClick={() => buttonClick(c.capital)}>{showWeather ? 'hide weather' : 'show weather'}</button>
-        {capitalTemp}
-      </div>
-
-    )
-  }
   return (
     <div>
       Find countries: <input value={keyWord} onChange={handleKeyWordChange} />
       {countriesToShow.map(
-        c => <Country key={c.name} name={c.name} />
+        c => <Country key={c.name} name={c.name} capital={c.capital} population={c.population} languages={c.languages} flag={c.flag} />
       )}
     </div>
   )
