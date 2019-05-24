@@ -1,163 +1,177 @@
-import React, { useState, useEffect } from 'react'
-import Person from './components/Person'
-import Filter from './components/Filter'
-import PersonForm from './components/PersonForm'
-import personService from './service/persons'
-import './App.css'
 
-const SuccessNotification = ({ message, success }) => {
-    if (message == null) {
+
+import React, { useState, useEffect } from 'react'
+import personService from './service/persons'
+
+const Notification = ({ notification }) => {
+    if (notification.message === null) {
         return null
     }
-    if (success) {
-        return (
-            <div className="success">
-                {message}
-            </div>
-        )
+
+    const style = {
+        color: notification.type === 'error' ? 'red' : 'green',
+        background: 'lightgrey',
+        fontSize: 20,
+        borderStyle: 'solid',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 10,
     }
+
     return (
-        <div className="error">
-            {message}
+        <div style={style}>
+            {notification.message}
         </div>
     )
+}
 
+const Filter = (props) => {
+    return (
+        <div>
+            rajaa näytettäviä
+      <input onChange={props.handleChange} value={props.value} />
+        </div>
+    )
+}
+
+const Persons = (props) => {
+    return (
+        props.persons.map(p =>
+            <div key={p.name}>
+                {p.name} {p.number} <button onClick={() => props.deletePerson(p.id)}>poista</button>
+            </div>
+        )
+    )
+}
+
+const PersonForm = (props) => {
+    return (
+        <form onSubmit={props.handleSubmit}>
+            <div>
+                nimi: <input onChange={props.handleNameChange} value={props.newName} />
+            </div>
+            <div>
+                numero: <input onChange={props.handleNumberChange} value={props.newNumber} />
+            </div>
+            <div>
+                <button type="submit">lisää</button>
+            </div>
+        </form>
+    )
 }
 
 const App = () => {
     const [persons, setPersons] = useState([])
     const [newName, setNewName] = useState('')
-    const [newNum, setNewNum] = useState('')
-    const [keyWord, setNewKeyWord] = useState('')
-    const [personsToShow, setPersonsToShow] = useState(persons)
-    const [message, setMessage] = useState('')
-    const [success, setSuccess] = useState(true)
+    const [newNumber, setNewNumber] = useState('')
+    const [filter, setFilter] = useState('')
+    const [notification, setNotification] = useState({
+        message: null
+    })
 
     useEffect(() => {
-        personService
-            .getAll()
-            .then(initPersons => {
-                setPersons(initPersons)
-                setPersonsToShow(initPersons)
+        personService.getAll()
+            .then(data => {
+                setPersons(data)
             })
     }, [])
 
-    const messageTimeout = () => {
-        setTimeout(() => {
-            setMessage(null)
-        }, 5000)
+    const handleNameChange = (event) => setNewName(event.target.value)
+    const handleNumberChange = (event) => setNewNumber(event.target.value)
+    const handleFilterChange = (event) => setFilter(event.target.value)
+
+    const notify = (message, type = 'success') => {
+        setNotification({ message, type })
+        setTimeout(() => setNotification({ message: null }), 10000)
     }
-    const addPerson = (event) => {
+
+    const handleSubmit = (event) => {
         event.preventDefault()
-        const personObject = {
-            name: newName,
-            number: newNum,
-            //id: persons.length + 1
-        }
-        const filteredPersons = persons.filter(person => person.name.toLowerCase() === newName.toLowerCase())
-        if (filteredPersons.length > 0) {
-            const confirm = window.confirm(`${newName} on jo luettelossa, korvataanko vanha numero uudella?`)
-            if (confirm) {
-                const personToUpdate = persons.find(p => p.name.toLowerCase() === newName.toLowerCase())
-                const changedPerson = { ...personToUpdate, number: newNum }
+
+        const existingPerson = persons.find(p => p.name.toLowerCase() === newName.toLowerCase())
+        
+        if (existingPerson) {
+            const ok = window.confirm(`${newName} on jo luettelossa, korvataanko vanha numero uudella`)
+
+            if (ok) {
+                console.log(existingPerson)
                 personService
-                    .update(personToUpdate.id, changedPerson)
-                    .then(ret => {
-                        setPersons(persons.map(p => p.id !== personToUpdate.id ? p : ret))
-                        setPersonsToShow(persons.map(p => p.id !== personToUpdate.id ? p : ret))
-                        setSuccess(true)
-                        setMessage(`Henkilön ${personToUpdate.name} puhelinnumero vaihdettiin`)
-                        messageTimeout()
+                    .update({
+                        ...existingPerson,
+                        number: newNumber
                     })
-                    .catch(error => {
-                        setSuccess(false)
-                        setMessage(`${personToUpdate.name} on jo poistettu`)
-                        setPersons(persons.filter(p => p.id !== personToUpdate.id))
-                        setPersonsToShow(persons.filter(p => p.id !== personToUpdate.id))
+                    .then(replacedPerson => {
+                        setPersons(persons.map(p => p.name.toLowerCase() === newName.toLowerCase() ? replacedPerson : p))
+                        setNewName('')
+                        setNewNumber('')
+                        notify(`Henkilön ${newName} numero muutettu`)
                     })
+
+                    .catch(() => {
+                        setPersons(persons.filter(p => p.name.toLowerCase() !== newName.toLowerCase()))
+                        notify(`Henkilön ${newName} oli jo poistettu`, 'error')
+                    })
+
             }
-        } else {
-            personService
-                .create(personObject)
-                .then(returnedPerson => {
-                    setPersons(persons.concat(returnedPerson))
-                    setNewName('')
-                    setNewNum('')
-                    setPersonsToShow(persons.concat(returnedPerson))
-                    setSuccess(true)
-                    setMessage(`${returnedPerson.name} lisättiin`)
-                    messageTimeout()
-                })
+
+            return
         }
-        //console.log(persons)
+
+        personService
+            .create({
+                name: newName,
+                number: newNumber
+            })
+            .then(createdPerson => {
+                setPersons(persons.concat(createdPerson))
+                setNewName('')
+                setNewNumber('')
+                notify(`Lisättiin ${createdPerson.name}`)
+            })
     }
 
-    const handlNameChange = (event) => {
-        setNewName(event.target.value)
-    }
-    const handleNumChange = (event) => {
-        setNewNum(event.target.value)
-    }
-    const handleKeyWord = (event) => {
-        const newKeyWord = event.target.value //solve the problem that setState is one step behind
-        if (newKeyWord.length > 0) {
-            setPersonsToShow(persons.filter(person => person.name.toLowerCase().includes(newKeyWord.toLowerCase())))
-        } else {
-            setPersonsToShow(persons)
-        }
-        setNewKeyWord(newKeyWord)
-    }
-
-    const toggleRemove = id => {
-        const personToRemove = persons.filter(p => p.id === id)[0]
-        const confirm = window.confirm(`poistetaanko ${personToRemove.name}`)
-        if (confirm) {
+    const deletePerson = (id) => {
+        const person = persons.find(p => p.id === id)
+        const ok = window.confirm(`Poistetaanko ${person.name}`)
+        if (ok) {
             personService
                 .remove(id)
-                .then(ret => {
-                    const newPersonRows = [...persons].filter(p => p.id !== id)
-                    setPersons(newPersonRows)
-                    setPersonsToShow(newPersonRows)
-                    setSuccess(true)
-                    setMessage(`${personToRemove.name} poistettiin`)
-                    messageTimeout()
-                })
-                .catch(error => {
-                    setSuccess(false)
-                    setMessage(`${personToRemove.name} on jo poistettu`)
+                .then(() => {
                     setPersons(persons.filter(p => p.id !== id))
-                    setPersonsToShow(persons.filter(p => p.id !== id))
                 })
+            notify(`Poistettiin ${person.name}`)
         }
-
     }
 
-    const rows = () => {
-        return (
-            personsToShow.map(person =>
-                <Person key={person.id} name={person.name} num={person.number} toggleRemove={() => toggleRemove(person.id)} />
-            )
-        )
-    }
+    const personsToShow = filter.length === 0
+        ? persons
+        : persons.filter(p => p.name.toLowerCase().includes(filter.toLowerCase()))
 
     return (
         <div>
-            <SuccessNotification message={message} success={success} />
-            <div>
-                <h1>Puhelinluettelo</h1>
-                <Filter keyValue={keyWord} handleMethod={handleKeyWord} />
-            </div>
-            <div>
-                <h2>Lisää uusi</h2>
-                <PersonForm addPerson={addPerson} newName={newName} handlNameChange={handlNameChange} newNum={newNum} handleNumChange={handleNumChange} />
-            </div>
-            <div>
-                <h2>Persons</h2>
-                {rows()}
-            </div>
+            <h2>Puhelinluettelo</h2>
+
+            <Notification notification={notification} />
+
+            <Filter handleChange={handleFilterChange} value={filter} />
+
+            <h3>lisää uusi</h3>
+
+            <PersonForm
+                handleNameChange={handleNameChange}
+                handleNumberChange={handleNumberChange}
+                handleSubmit={handleSubmit}
+                newName={newName}
+                newNumber={newNumber}
+            />
+
+            <h3>Numerot</h3>
+
+            <Persons persons={personsToShow} deletePerson={deletePerson} />
         </div>
     )
 
 }
 
 export default App
+
