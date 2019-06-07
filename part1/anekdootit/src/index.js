@@ -31,9 +31,9 @@ const App = (props) => {
     }
 
     const handleVoteClick = () => {
-        const copy = [...voted]
-        copy[selected] += 1
-        setVoted(copy)
+        const updatedVotes = [...voted]
+        updatedVotes[selected] += 1
+        setVoted(updatedVotes)
     }
 
     return (

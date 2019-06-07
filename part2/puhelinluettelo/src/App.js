@@ -94,7 +94,6 @@ const App = () => {
             const ok = window.confirm(`${newName} on jo luettelossa, korvataanko vanha numero uudella`)
 
             if (ok) {
-                console.log(existingPerson)
                 personService
                     .update({
                         ...existingPerson,
@@ -111,12 +110,13 @@ const App = () => {
                         setPersons(persons.filter(p => p.name.toLowerCase() !== newName.toLowerCase()))
                         notify(`Henkilön ${newName} oli jo poistettu`, 'error')
                     })
+                    
 
             }
 
             return
         }
-
+        console.log(persons)
         personService
             .create({
                 name: newName,
@@ -127,6 +127,9 @@ const App = () => {
                 setNewName('')
                 setNewNumber('')
                 notify(`Lisättiin ${createdPerson.name}`)
+            })
+            .catch(error=>{
+                notify(error.response.data.error,'error')
             })
     }
 
