@@ -6,3 +6,6 @@
 [part 2](https://github.com/yumoL/full_stack_exercises/tree/master/part2)
 
 [part 5](https://github.com/yumoL/full_stack_exercises/tree/master/part5)
+
+[part 6](https://github.com/yumoL/full_stack_exercises/tree/master/part6)
+
