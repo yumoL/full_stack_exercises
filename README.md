@@ -13,3 +13,5 @@
 
 [part 6](https://github.com/yumoL/full_stack_exercises/tree/master/part6)
 
+[part 7](https://github.com/yumoL/full_stack_exercises/tree/master/part7)
+
